@@ -76,38 +76,34 @@ class Planet:
                 force_vector1 = dist_vec.s_multiply(G * planet[i].m * self.m / (dist + e) ** 3)
                 # if the distance is less than the current planet's radius,
                 # make the force negative (magnitude still the same?)
-                if dist < self.r:
-                    force_vector1 = force_vector1.s_multiply(-1)
+                # if dist < self.r:
+                #    force_vector1 = force_vector1.s_multiply(-1)
                 # Add the result to the total force vector
                 force_vector = force_vector.add(force_vector1)
         # return the force vector negated?
         return force_vector.s_multiply(-1)
 
-# Input the number of planets on the command line
-n = int(input('input n: '))
-# Initialize time steps
-t = 0
-# Time resolution delta t
-dt = 0.001
-# List of all the planets
-planet = []
-# Create n randomly generated planets
-for i in range(n):
-    # Create a list of 4 random numbers 0-1 to use as pos and vel components
-    a = rand.random(4)
-    p = Planet(rand.randint(1, 5),
-               0.001,
-               Vector(a[0], a[1]),
-               Vector(a[2], a[3]),
-               str(i))
-    planet.append(p)
-# p1 = Planet(100, 0.001, Vector(0.1, 0.2), Vector(0.5, 0.75), 'p1')
-# p2 = Planet(1, 0.001, Vector(0.2, 0.1), Vector(0.2, 0.5), 'p2')
-# p3 = Planet(1, 0.001, Vector(0.2, 0.15), Vector(0.75, 1), 'p3')
-# p4 = Planet(1, 0.001, Vector(0.15, 0.15), Vector(0.75, 0.75), 'p4')
-# planet = [p1, p2, p3, p4]
-# Unnecessary if statement
-if True:
+
+def main(n):
+    # Time resolution delta t
+    dt = 0.001
+    # List of all the planets
+    planet = []
+    # Create n randomly generated planets
+    for i in range(n):
+        # Create a list of 4 random numbers 0-1 for pos and vel components
+        a = rand.random(4)
+        p = Planet(rand.randint(1, 5),
+                   0.001,
+                   Vector(a[0], a[1]),
+                   Vector(a[2], a[3]),
+                   str(i))
+        planet.append(p)
+    # p1 = Planet(100, 0.001, Vector(0.1, 0.2), Vector(0.5, 0.75), 'p1')
+    # p2 = Planet(1, 0.001, Vector(0.2, 0.1), Vector(0.2, 0.5), 'p2')
+    # p3 = Planet(1, 0.001, Vector(0.2, 0.15), Vector(0.75, 1), 'p3')
+    # p4 = Planet(1, 0.001, Vector(0.15, 0.15), Vector(0.75, 0.75), 'p4')
+    # planet = [p1, p2, p3, p4]
     # Number of calculation steps
     steps = 2000
     X = []
@@ -119,7 +115,7 @@ if True:
         X.append([])
         Y.append([])
     # loop through the number of steps, counting down from initial steps value
-    while steps > 0:
+    for step in range(steps):
         # for each planet, by index
         for i in range(len(planet)):
             # planet's momentum changes by F*dt
@@ -129,13 +125,12 @@ if True:
             # Add each position component to the position lists for this planet
             X[i].append(planet[i].pos.x)
             Y[i].append(planet[i].pos.y)
-        # Increment t by dt
-        t = t + dt
-        # Decrement steps by 1
-        steps = steps - 1
     # for each planet, plot the position components over time
     for i in range(len(planet)):
-        plt.plot(X[i], Y[i], linewidth=0.5)
-        plt.scatter(X[i][:1], Y[i][:1], s=30)
+        plt.plot(X[i], Y[i])
+        plt.scatter(X[i][-1], Y[i][-1], s=30)
     plt.title('N Body Problem (n = ' + str(n) + ')\n')
     plt.show()
+
+if __name__ == '__main__':
+    main(3)
