@@ -1,6 +1,8 @@
 import math
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 import numpy.random as rand
+
+plt.rcParams['figure.dpi'] = 280
 
 
 class Vector:
@@ -8,17 +10,32 @@ class Vector:
         self.x = x
         self.y = y
 
-    def display(self):
-        return '(' + str(self.x) + ', ' + str(self.y) + ')'
+    def __repr__(self):
+        return f'Vector({self.x}, {self.y})'
 
     def magnitude(self):
-        mag = math.sqrt(self.x ** 2 + self.y ** 2)
+        mag = math.hypot(self.x, self.y)
         return mag
 
     def add(self, vector):
         """ Add the x and y components, and return a new Vector. """
         xf = self.x + vector.x
         yf = self.y + vector.y
+        return Vector(xf, yf)
+
+    def __add__(self, vector):
+        """ Add the x and y components, and return a new Vector. """
+        # Check if the vector parameter is a Vector or a scalar
+        if isinstance(vector, Vector):
+            # the parameter is a Vector, add the components
+            xf = self.x + vector.x
+            yf = self.y + vector.y
+        elif not hasattr(vector, '__len__'):
+            # the vector parameter is a scalar, add it to each component
+            xf = self.x + vector
+            yf = self.y + vector
+        else:
+            return NotImplemented
         return Vector(xf, yf)
 
     def subtract(self, vector):
@@ -51,12 +68,14 @@ class Planet:
         self.y = pos.y
         self.vel = vel
         # Momentum equals mass*velocity
+        # Note that momentum should not be a vector.
         self.momentum = vel.s_multiply(self.m)
+        self.accel = None
 
     def force(self, planet):
         # Initialize the force vector at 0
         force_vector = Vector(0, 0)
-        G = 0.1
+        G = 0.004
         e = 0.0001
         # neg_vector unused
         # neg_vector = self.pos.s_multiply(-1)
@@ -76,61 +95,59 @@ class Planet:
                 force_vector1 = dist_vec.s_multiply(G * planet[i].m * self.m / (dist + e) ** 3)
                 # if the distance is less than the current planet's radius,
                 # make the force negative (magnitude still the same?)
-                # if dist < self.r:
-                #    force_vector1 = force_vector1.s_multiply(-1)
+                if dist < self.r:
+                    force_vector1 = force_vector1.s_multiply(-1)
                 # Add the result to the total force vector
                 force_vector = force_vector.add(force_vector1)
         # return the force vector negated?
         return force_vector.s_multiply(-1)
 
 
-def main(n):
+def simulate(planets, nsteps):
     # Time resolution delta t
     dt = 0.001
+    # Number of calculation steps
+    X = [[] for i in range(len(planets))]
+    Y = [[] for i in range(len(planets))]
+    # loop through the number of steps, counting down from initial steps value
+    for step in range(nsteps):
+        # for each planet, by index
+        for i in range(len(planets)):
+            # Acceleration = F/m
+            planets[i].accel = planets[i].force(planets).s_multiply(1/planets[i].m)
+            # Velocity changes by accel*dt
+            planets[i].vel = planets[i].vel.add(planets[i].accel.s_multiply(dt))
+            # planet's position changes by momentum*dt/mass = v*dt
+            planets[i].pos = planets[i].pos.add(planets[i].vel.s_multiply(dt))
+            # Add each position component to the position lists for this planet
+            X[i].append(planets[i].pos.x)
+            Y[i].append(planets[i].pos.y)
+    return X, Y
+
+
+def main(nbodies, nsteps):
     # List of all the planets
-    planet = []
+    planets = []
     # Create n randomly generated planets
-    for i in range(n):
+    for i in range(nbodies):
         # Create a list of 4 random numbers 0-1 for pos and vel components
-        a = rand.random(4)
-        p = Planet(rand.randint(1, 5),
+        a = rand.random(4)/2
+        p = Planet(10,
                    0.001,
                    Vector(a[0], a[1]),
                    Vector(a[2], a[3]),
                    str(i))
-        planet.append(p)
-    # p1 = Planet(100, 0.001, Vector(0.1, 0.2), Vector(0.5, 0.75), 'p1')
-    # p2 = Planet(1, 0.001, Vector(0.2, 0.1), Vector(0.2, 0.5), 'p2')
-    # p3 = Planet(1, 0.001, Vector(0.2, 0.15), Vector(0.75, 1), 'p3')
-    # p4 = Planet(1, 0.001, Vector(0.15, 0.15), Vector(0.75, 0.75), 'p4')
-    # planet = [p1, p2, p3, p4]
-    # Number of calculation steps
-    steps = 2000
-    X = []
-    Y = []
-    for i in range(len(planet)):
-        # for each planet, add a list to X and Y lists
-        # replace this block with list comprehensions ?
-        # X = [[] for i in range(len(planet))]
-        X.append([])
-        Y.append([])
-    # loop through the number of steps, counting down from initial steps value
-    for step in range(steps):
-        # for each planet, by index
-        for i in range(len(planet)):
-            # planet's momentum changes by F*dt
-            planet[i].momentum = planet[i].momentum.add(planet[i].force(planet).s_multiply(dt))
-            # planet's position changes by momentum*dt/mass = v*dt
-            planet[i].pos = planet[i].pos.add((planet[i].momentum.s_multiply(dt)).s_multiply(1/planet[i].m))
-            # Add each position component to the position lists for this planet
-            X[i].append(planet[i].pos.x)
-            Y[i].append(planet[i].pos.y)
+        planets.append(p)
+    X, Y = simulate(planets, nsteps)
+    fig1, ax = plt.subplots()
+    ax.set_aspect('equal')
     # for each planet, plot the position components over time
-    for i in range(len(planet)):
-        plt.plot(X[i], Y[i])
-        plt.scatter(X[i][-1], Y[i][-1], s=30)
-    plt.title('N Body Problem (n = ' + str(n) + ')\n')
+    for i in range(len(planets)):
+        ax.plot(X[i], Y[i])
+        ax.scatter(X[i][-1], Y[i][-1], s=30)
+    ax.set_title(f'N Body Problem (n = {nbodies})')
     plt.show()
 
+
 if __name__ == '__main__':
-    main(3)
+    main(nbodies=2, nsteps=5000)
