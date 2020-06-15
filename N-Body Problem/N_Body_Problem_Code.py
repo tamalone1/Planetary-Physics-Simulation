@@ -23,17 +23,32 @@ class Vector:
         yf = self.y + vector.y
         return Vector(xf, yf)
 
-    def __add__(self, vector):
+    def __add__(self, other):
         """ Add the x and y components, and return a new Vector. """
-        # Check if the vector parameter is a Vector or a scalar
-        if isinstance(vector, Vector):
+        # Check if the other parameter is a Vector or a scalar
+        if isinstance(other, Vector):
             # the parameter is a Vector, add the components
-            xf = self.x + vector.x
-            yf = self.y + vector.y
-        elif not hasattr(vector, '__len__'):
-            # the vector parameter is a scalar, add it to each component
-            xf = self.x + vector
-            yf = self.y + vector
+            xf = self.x + other.x
+            yf = self.y + other.y
+        elif not hasattr(other, '__len__'):
+            # the other parameter is a scalar, add it to each component
+            xf = self.x + other
+            yf = self.y + other
+        else:
+            return NotImplemented
+        return Vector(xf, yf)
+
+    def __sub__(self, other):
+        """ Subtract the x and y components, and return a new Vector. """
+        # Check if the other parameter is a Vector or a scalar
+        if isinstance(other, Vector):
+            # the parameter is a Vector, subtract the components
+            xf = self.x - other.x
+            yf = self.y - other.y
+        elif not hasattr(other, '__len__'):
+            # the other parameter is a scalar, subtract it from each component
+            xf = self.x - other
+            yf = self.y - other
         else:
             return NotImplemented
         return Vector(xf, yf)
@@ -42,6 +57,21 @@ class Vector:
         """ Subtract other Vector from this vector, return a new Vector. """
         xf = self.x - vector.x
         yf = self.y - vector.y
+        return Vector(xf, yf)
+
+    def __mul__(self, other):
+        """ Multiply by components, and return a new Vector. """
+        # Check if the other parameter is a Vector or a scalar
+        if isinstance(other, Vector):
+            # the parameter is a Vector, multiply each component pai
+            xf = self.x * other.x
+            yf = self.y * other.y
+        elif not hasattr(other, '__len__'):
+            # the other parameter is a scalar, multiply each component by it
+            xf = self.x * other
+            yf = self.y * other
+        else:
+            return NotImplemented
         return Vector(xf, yf)
 
     def v_multiply(self, vector):
@@ -86,21 +116,21 @@ class Planet:
                 # distance vector between planets = current pos - pos[i]
                 # dot notation: use Vector.subtract method from pos
                 # distance Vector points from current planet to planet[i]
-                dist_vec = self.pos.subtract(planet[i].pos)
+                dist_vec = self.pos - planet[i].pos
                 # distance magnitude
                 dist = dist_vec.magnitude()
                 # F vector = G*m1*m2/(r+e)**3 * distance vector
                 # e = small additive value, unknown
                 # distvec/dist**3 gives the unit vector divided by dist**2
-                force_vector1 = dist_vec.s_multiply(G * planet[i].m * self.m / (dist + e) ** 3)
+                force_vector1 = dist_vec * (G * planet[i].m * self.m / (dist + e) ** 3)
                 # if the distance is less than the current planet's radius,
                 # make the force negative (magnitude still the same?)
                 if dist < self.r:
-                    force_vector1 = force_vector1.s_multiply(-1)
+                    force_vector1 = force_vector1 * -1
                 # Add the result to the total force vector
-                force_vector = force_vector.add(force_vector1)
+                force_vector = force_vector + force_vector1
         # return the force vector negated?
-        return force_vector.s_multiply(-1)
+        return force_vector * -1
 
 
 def simulate(planets, nsteps):
@@ -114,11 +144,13 @@ def simulate(planets, nsteps):
         # for each planet, by index
         for i in range(len(planets)):
             # Acceleration = F/m
-            planets[i].accel = planets[i].force(planets).s_multiply(1/planets[i].m)
+            planets[i].accel = planets[i].force(planets) * (1/planets[i].m)
             # Velocity changes by accel*dt
-            planets[i].vel = planets[i].vel.add(planets[i].accel.s_multiply(dt))
+            # with the __add__ method, the + operator can be used
+            planets[i].vel = planets[i].vel + planets[i].accel * dt
             # planet's position changes by momentum*dt/mass = v*dt
-            planets[i].pos = planets[i].pos.add(planets[i].vel.s_multiply(dt))
+            # with the __add__ method, the + operator can be used
+            planets[i].pos = planets[i].pos + planets[i].vel * dt
             # Add each position component to the position lists for this planet
             X[i].append(planets[i].pos.x)
             Y[i].append(planets[i].pos.y)
@@ -131,7 +163,7 @@ def main(nbodies, nsteps):
     # Create n randomly generated planets
     for i in range(nbodies):
         # Create a list of 4 random numbers 0-1 for pos and vel components
-        a = rand.random(4)/2
+        a = rand.random(4)
         p = Planet(10,
                    0.001,
                    Vector(a[0], a[1]),
@@ -150,4 +182,4 @@ def main(nbodies, nsteps):
 
 
 if __name__ == '__main__':
-    main(nbodies=2, nsteps=5000)
+    main(nbodies=5, nsteps=5000)
